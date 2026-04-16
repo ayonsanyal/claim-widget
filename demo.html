@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claim Widget Demo</title>
+  <link rel="stylesheet" href="./claims.css" />
+</head>
+
+<body>
+
+<h1>Claim Widget Demo</h1>
+
+<label>JWT Token:</label>
+<input id="token" placeholder="Paste JWT here" oninput="handleTokenChange()" />
+
+<div id="userId" style="margin-bottom:10px; font-weight:bold;"></div>
+
+<button onclick="openWidget()">Open Widget</button>
+<button onclick="fetchClaims()">Fetch Claims</button>
+
+
+<div style="margin-top:20px;">
+  <h3>Create Claim</h3>
+
+  <input id="title" placeholder="Title" />
+  <input id="description" placeholder="Description" />
+
+<button onclick="createClaim()">Create Claim</button>
+</div>
+
+
+<table id="claimsTable" style="display:none;">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="claimsBody"></tbody>
+</table>
+
+<div id="empty"></div>
+
+
+<script src="./dist/claim-widget.iife.js?v=3"></script>
+
+<script>
+const API_URL = "http://localhost:3000";
+
+
+  function getToken() {
+    return document.getElementById("token").value;
+  }
+
+  function handleTokenChange() {
+    const token = getToken();
+    localStorage.setItem("jwt", token);
+    showUser();
+  }
+
+  function getUserIdFromToken(token) {
+    try {
+      return JSON.parse(atob(token.split('.')[1])).sub;
+    } catch {
+      return null;
+    }
+  }
+
+  function showUser() {
+    const token = getToken();
+    const userId = getUserIdFromToken(token);
+    document.getElementById("userId").innerText =
+      userId ? "User ID: " + userId : "";
+  }
+
+ 
+  window.addEventListener("load", () => {
+    const savedToken = localStorage.getItem("jwt");
+
+    if (savedToken) {
+      document.getElementById("token").value = savedToken;
+      showUser();
+
+      ClaimWidget.init({
+        token: savedToken,
+        apiUrl: API_URL,
+      });
+
+      fetchClaims();
+    }
+  });
+
+  function openWidget() {
+    const token = getToken();
+
+    if (!token) return alert("Enter token");
+
+    ClaimWidget.init({
+      token,
+      apiUrl: API_URL,
+    });
+
+    setTimeout(fetchClaims, 2000);
+  }
+
+  async function createClaim() {
+    const token = getToken();
+
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+
+    if (!title || !description) {
+      return alert("Fill all fields");
+    }
+
+    await fetch(`${API_URL}/claims`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ title, description }),
+    });
+
+    fetchClaims();
+
+    document.getElementById("title").value = "";
+    document.getElementById("description").value = "";
+  }
+
+  async function updateStatus(id, status) {
+    const token = getToken();
+
+    await fetch(`${API_URL}/claims/${id}/status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    fetchClaims();
+  }
+
+  async function fetchClaims() {
+    const token = getToken();
+
+    const res = await fetch(`${API_URL}/claims`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = await res.json();
+    renderTable(result.data || []);
+  }
+
+  function renderTable(claims) {
+    const table = document.getElementById("claimsTable");
+    const body = document.getElementById("claimsBody");
+    const empty = document.getElementById("empty");
+
+    body.innerHTML = "";
+
+    if (!claims.length) {
+      table.style.display = "none";
+      empty.innerText = "No claims found";
+      return;
+    }
+
+    table.style.display = "table";
+    empty.innerText = "";
+
+    claims.forEach((c) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td>${c.title}</td>
+        <td>${c.description}</td>
+        <td>
+          <select class="status-select">
+            <option value="OPEN" ${c.status === "OPEN" ? "selected" : ""}>OPEN</option>
+            <option value="IN_REVIEW" ${c.status === "IN_REVIEW" ? "selected" : ""}>IN_REVIEW</option>
+            <option value="CLOSED" ${c.status === "CLOSED" ? "selected" : ""}>CLOSED</option>
+          </select>
+        </td>
+      `;
+
+      const select = row.querySelector("select");
+
+      select.addEventListener("change", () => {
+        updateStatus(c.id, select.value);
+      });
+
+      body.appendChild(row);
+    });
+  }
+</script>
+
+</body>
+</html>
