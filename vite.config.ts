@@ -3,17 +3,18 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': {},
+  },
+
   build: {
     lib: {
-      entry: 'src/main.tsx', 
+      entry: './src/main.tsx',
       name: 'ClaimWidget',
-      fileName: 'claim-widget',
       formats: ['iife'],
-    },
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true,
-      },
+      fileName: () => 'claim-widget.iife.js',
     },
   },
 });

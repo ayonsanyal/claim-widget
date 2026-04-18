@@ -1,6 +1,15 @@
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
+
+import "./index.css";
+
+import {
+  setConfig,
+  createClaim,
+  fetchClaims,
+  fetchClaimsByStatus,
+  updateStatus,
+  deleteClaim,
+  updateClaim,
+} from "./claims.controller";
 
 type InitOptions = {
   token: string;
@@ -8,29 +17,37 @@ type InitOptions = {
   targetId?: string;
 };
 
-(window as any).ClaimWidget = {
+const ClaimWidget = {
   init: ({ token, apiUrl, targetId }: InitOptions) => {
+   
+    setConfig(token, apiUrl);
+
     let container: HTMLElement | null = null;
 
-    
     if (targetId) {
       container = document.getElementById(targetId);
     }
 
-    
     if (!container) {
-      container = document.createElement('div');
-      container.id = 'claim-widget-root';
+      container = document.createElement("div");
+      container.id = "claim-widget-root";
       document.body.appendChild(container);
     }
 
-   
-    container.innerHTML = '';
+    container.innerHTML = "";
 
-    ReactDOM.createRoot(container).render(
-      <App token={token} apiUrl={apiUrl} />
-    );
-    console.log("NEW BUILD LOADED");
+    console.log(" Widget initialized with token:", token);
   },
-  
+
+  actions: {
+    createClaim,
+    fetchClaims,
+    updateStatus,
+    deleteClaim,
+    updateClaim,
+    fetchClaimsByStatus
+  },
 };
+
+export default ClaimWidget;
+(globalThis as any).ClaimWidget = ClaimWidget;

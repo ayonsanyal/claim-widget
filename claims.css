@@ -64,3 +64,13 @@ tr:hover {
   padding: 6px;
   border-radius: 6px;
 }
+
+input.edit-title,
+input.edit-description {
+  width: 90%;
+  padding: 4px;
+}
+
+button {
+  margin-right: 5px;
+}
