@@ -10,6 +10,7 @@ export default defineConfig({
   },
 
   build: {
+    cssCodeSplit: false,
     lib: {
       entry: './src/main.tsx',
       name: 'ClaimWidget',

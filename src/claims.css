@@ -1,0 +1,51 @@
+#claim-widget-root {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+.funnel-step {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.funnel-step h3 {
+  margin-bottom: 12px;
+}
+
+.funnel-step input,
+.funnel-step textarea {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.funnel-step button {
+  padding: 8px 16px;
+  background: #2d5bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.funnel-step button:hover {
+  background: #1f44cc;
+}
+
+.funnel-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.funnel-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}

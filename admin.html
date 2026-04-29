@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Claim Widget Admin</title>
+  <link rel="stylesheet" href="dist/admin.css">
+</head>
+
+<body>
+
+<h1>Claim Widget Admin</h1>
+
+<div class="funnel-step">
+
+  <h3>Authentication</h3>
+
+  <div class="form-group">
+    <label>JWT Token</label>
+    <input
+      id="token"
+      placeholder="JWT token"
+      style="width:100%;max-width:900px"
+    />
+  </div>
+
+  <div class="form-actions">
+    <button onclick="loadAll()">
+      Load Admin
+    </button>
+  </div>
+
+</div>
+
+
+<div class="funnel-step">
+
+  <h3>A/B Variant Toggle</h3>
+
+  <div class="demo-actions">
+
+    <button onclick="setVariant('A')">
+      Variant A
+    </button>
+
+    <button onclick="setVariant('B')">
+      Variant B
+    </button>
+
+    <button onclick="setVariant('split')">
+      Split Test
+    </button>
+
+  </div>
+
+  <p id="variantInfo"></p>
+
+</div>
+
+
+<div class="funnel-step">
+
+  <h3>Reorder Widget Sections</h3>
+
+  <div id="steps"></div>
+
+  <div class="form-actions">
+    <button onclick="saveOrder()">
+      Save Order
+    </button>
+  </div>
+
+</div>
+
+
+<div class="funnel-step">
+
+  <h3>Version History</h3>
+
+  <div id="versions"></div>
+
+</div>
+
+
+<script>
+const API = "http://localhost:3000";
+
+let TOKEN = "";
+let CONFIG = null;
+let dragged = null;
+
+function headers() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + TOKEN
+  };
+}
+
+window.onload = () => {
+
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const token =
+    params.get("token");
+
+  if(token){
+    document
+      .getElementById("token")
+      .value = token;
+
+    loadAll();
+  }
+};
+
+async function loadAll(){
+
+  TOKEN =
+    document.getElementById("token")
+    .value
+    .trim();
+
+  if(!TOKEN){
+    return alert("Token required");
+  }
+
+  await loadConfig();
+  await loadVersions();
+}
+
+async function loadConfig(){
+
+  const res =
+    await fetch(
+      API + "/claims/config",
+      {
+        headers: headers()
+      }
+    );
+
+  CONFIG = await res.json();
+
+  document
+    .getElementById("variantInfo")
+    .innerHTML =
+      "Current Variant: <b>" +
+      CONFIG.variant +
+      "</b> | Version: <b>" +
+      CONFIG.version +
+      "</b>";
+
+  renderSteps(CONFIG.steps);
+}
+
+function renderSteps(steps){
+
+  const root = document.getElementById("steps");
+  root.innerHTML = "";
+
+  steps.forEach((step,index)=>{
+
+    const div = document.createElement("div");
+    div.className = "step-card";
+    div.draggable = true;
+    div.dataset.id = step.id;
+
+    div.innerHTML = `
+      <div class="drag-line">
+        <span class="handle">☰</span>
+
+        <div>
+          <div class="step-title">
+            ${index + 1}. ${step.title}
+          </div>
+
+          <div class="step-sub">
+            Step ID: ${step.id}
+          </div>
+        </div>
+      </div>
+    `;
+
+    div.addEventListener("dragstart", dragStart);
+    div.addEventListener("dragover", dragOver);
+    div.addEventListener("drop", drop);
+
+    root.appendChild(div);
+  });
+}
+
+function dragStart(e){
+  dragged = e.currentTarget;
+  dragged.classList.add("dragging");
+}
+
+function dragOver(e){
+  e.preventDefault();
+}
+
+function drop(e){
+  e.preventDefault();
+
+  const target = e.currentTarget;
+
+  if(target === dragged) return;
+
+  const root = document.getElementById("steps");
+
+  const items = [...root.children];
+  const draggedIndex = items.indexOf(dragged);
+  const targetIndex = items.indexOf(target);
+
+  if(draggedIndex < targetIndex){
+    root.insertBefore(dragged, target.nextSibling);
+  }else{
+    root.insertBefore(dragged, target);
+  }
+
+  dragged.classList.remove("dragging");
+}
+
+async function saveOrder(){
+
+  const ids =
+  [...document.querySelectorAll("#steps .step-card")]
+
+  await fetch(
+    API + "/claims/config/reorder",
+    {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify({
+        stepIds: ids
+      })
+    }
+  );
+
+  console.log("Order saved");
+
+  await loadAll();
+}
+
+async function setVariant(name){
+
+  await fetch(
+    API +
+    "/claims/config/variant/" +
+    name,
+    {
+      method: "POST",
+      headers: headers()
+    }
+  );
+
+  await loadAll();
+}
+
+async function loadVersions(){
+
+  const res =
+    await fetch(
+      API +
+      "/claims/config/versions",
+      {
+        headers: headers()
+      }
+    );
+
+  const data =
+    await res.json();
+
+  const root =
+    document.getElementById(
+      "versions"
+    );
+
+  root.innerHTML = "";
+
+  if(!data.length){
+    root.innerHTML =
+      "<p>No versions yet</p>";
+    return;
+  }
+
+  data.forEach(v => {
+
+    const box =
+      document.createElement("div");
+
+    box.className =
+      "funnel-step";
+
+    box.style.padding =
+      "16px";
+
+    box.style.marginBottom =
+      "12px";
+
+    box.innerHTML =
+      "<strong>Version " +
+      v.version +
+      "</strong><br>" +
+      "<small>" +
+      v.savedAt +
+      "</small><br><br>" +
+      "<button onclick='restoreVersion(" +
+      v.version +
+      ")'>Restore</button>";
+
+    root.appendChild(box);
+  });
+}
+
+async function restoreVersion(v){
+
+  await fetch(
+    API +
+    "/claims/config/restore/" +
+    v,
+    {
+      method: "POST",
+      headers: headers()
+    }
+  );
+
+  console.log(
+    "Version restored"
+  );
+
+  await loadAll();
+}
+</script>
+
+</body>
+</html>

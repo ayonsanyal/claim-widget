@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Claim Widget Demo</title>
-  <link rel="stylesheet" href="./claims.css" />
+  <link rel="stylesheet" href="dist/widget.style.css">
 </head>
 
 <body>
@@ -10,249 +10,61 @@
 <h1>Claim Widget Demo</h1>
 
 <label>JWT Token:</label>
-<input id="token" placeholder="Paste JWT here" oninput="handleTokenChange()" />
+<input id="token" style="width:700px">
 
-<div id="userId" style="margin-bottom:10px; font-weight:bold;"></div>
+<br><br>
 
-<button onclick="openWidget()">Open Widget</button>
-<button onclick="fetchClaims()">Fetch Claims</button>
+<label>Status:</label>
 
-<br/><br/>
-
-<!-- ✅ NEW: Status filter -->
-<label>Status Filter:</label>
-<select id="filterStatus">
+<select id="statusFilter">
   <option value="">ALL</option>
   <option value="OPEN">OPEN</option>
   <option value="IN_REVIEW">IN_REVIEW</option>
   <option value="CLOSED">CLOSED</option>
 </select>
 
-<div style="margin-top:20px;">
-  <h3>Create Claim</h3>
+<br><br>
 
-  <input id="title" placeholder="Title" />
-  <input id="description" placeholder="Description" />
-
-  <button onclick="createClaim()">Create Claim</button>
-</div>
-
-<table id="claimsTable" style="display:none;">
-  <thead>
-    <tr>
-      <th>Title</th>
-      <th>Description</th>
-      <th>Status</th>
-      <th>Actions</th> <!-- ✅ NEW -->
-    </tr>
-  </thead>
-  <tbody id="claimsBody"></tbody>
-</table>
-
-<div id="empty"></div>
+<button onclick="openWidget()">Open Widget</button>
+<button onclick="refreshClaims()">Fetch Claims</button>
+<button onclick="openAdmin()">Admin Panel</button>
 
 <script src="/dist/claim-widget.iife.js"></script>
 
 <script>
 const API_URL = "http://localhost:3000";
 
-let isInitialized = false;
+async function openWidget() {
 
-function getToken() {
-  return document.getElementById("token").value;
-}
+  const token =
+    document.getElementById("token").value;
 
-function handleTokenChange() {
-  const token = getToken();
-  localStorage.setItem("jwt", token);
-  showUser();
-}
-
-function getUserIdFromToken(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1])).sub;
-  } catch {
-    return null;
-  }
-}
-
-function showUser() {
-  const token = getToken();
-  const userId = getUserIdFromToken(token);
-  document.getElementById("userId").innerText =
-    userId ? "User ID: " + userId : "";
-}
-
-
-function openWidget() {
-  const token = getToken();
-
-  if (!token) return alert("Enter token first");
-
-  if (!window.ClaimWidget) {
-    return alert("Widget not loaded");
-  }
-
-  ClaimWidget.init({
+  await ClaimWidget.init({
     token,
-    apiUrl: API_URL,
-  });
-
-  isInitialized = true;
-
-  console.log("Widget initialized");
-}
-
-
-async function fetchClaims() {
-  if (!isInitialized) {
-    return alert("Please click 'Open Widget' first");
-  }
-
-  const status = document.getElementById("filterStatus").value;
-
-  console.log("Selected status:", status);
-
-  let claims;
-
-  if (status) {
-    
-    claims = await ClaimWidget.actions.fetchClaimsByStatus(status);
-  } else {
-   
-    claims = await ClaimWidget.actions.fetchClaims();
-  }
-
-  console.log("Claims FINAL:", claims);
-
-  renderTable(claims || []);
-}
-
-
-
-async function createClaim() {
-  if (!isInitialized) {
-    return alert("Please click 'Open Widget' first");
-  }
-
-  const title = document.getElementById("title").value;
-  const description = document.getElementById("description").value;
-
-  if (!title || !description) {
-    return alert("Fill all fields");
-  }
-
-  await ClaimWidget.actions.createClaim(title, description);
-
-  fetchClaims();
-
-  document.getElementById("title").value = "";
-  document.getElementById("description").value = "";
-}
-
-function renderTable(claims) {
-  const table = document.getElementById("claimsTable");
-  const body = document.getElementById("claimsBody");
-  const empty = document.getElementById("empty");
-
-  body.innerHTML = "";
-
-  if (!claims || claims.length === 0) {
-    table.style.display = "none";
-    empty.innerText = "No claims found";
-    return;
-  }
-
-  table.style.display = "table";
-  empty.innerText = "";
-
-  claims.forEach((c) => {
-    const row = document.createElement("tr");
-
-    let isEditing = false;
-
-    function renderRow(editMode = false) {
-      row.innerHTML = `
-        <td>
-          ${
-            editMode
-              ? `<input value="${c.title}" class="edit-title" />`
-              : c.title
-          }
-        </td>
-        <td>
-          ${
-            editMode
-              ? `<input value="${c.description}" class="edit-description" />`
-              : c.description
-          }
-        </td>
-        <td>
-          <select>
-            <option value="OPEN" ${c.status === "OPEN" ? "selected" : ""}>OPEN</option>
-            <option value="IN_REVIEW" ${c.status === "IN_REVIEW" ? "selected" : ""}>IN_REVIEW</option>
-            <option value="CLOSED" ${c.status === "CLOSED" ? "selected" : ""}>CLOSED</option>
-          </select>
-        </td>
-        <td>
-          <button class="edit-btn">
-            ${editMode ? "Save" : "Edit"}
-          </button>
-          <button class="delete-btn">Delete</button>
-        </td>
-      `;
-
-      
-      row.querySelector("select").addEventListener("change", (e) => {
-        ClaimWidget.actions.updateStatus(c.id, e.target.value);
-      });
-
-    
-      row.querySelector(".delete-btn").addEventListener("click", async () => {
-        await ClaimWidget.actions.deleteClaim(c.id);
-        fetchClaims();
-      });
-
-     
-      row.querySelector(".edit-btn").addEventListener("click", async () => {
-        if (!editMode) {
-          
-          isEditing = true;
-          renderRow(true);
-        } else {
-         
-          const newTitle = row.querySelector(".edit-title").value;
-          const newDescription = row.querySelector(".edit-description").value;
-
-          if (!newTitle || !newDescription) {
-            return alert("Fields cannot be empty");
-          }
-
-          await ClaimWidget.actions.updateClaim(c.id, {
-            title: newTitle,
-            description: newDescription,
-          });
-
-          // refresh
-          fetchClaims();
-        }
-      });
-    }
-
-    renderRow(false);
-    body.appendChild(row);
+    apiUrl: API_URL
   });
 }
 
+async function refreshClaims() {
+  openWidget();
+}
 
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("jwt");
+function openAdmin() {
 
-  if (saved) {
-    document.getElementById("token").value = saved;
-    showUser();
+  const token =
+    document.getElementById("token").value;
+
+  if(!token){
+    return alert("Enter token first");
   }
-});
+
+  window.open(
+    "/admin.html?token=" +
+    encodeURIComponent(token),
+    "_blank",
+    "width=1450,height=950"
+  );
+}
 </script>
 
 </body>

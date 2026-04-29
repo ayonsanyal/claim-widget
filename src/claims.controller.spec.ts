@@ -51,8 +51,43 @@ describe("claims.controller", () => {
     expect(result).toEqual([]);
   });
 
+  it("should create claim successfully", async () => {
+    (api.createClaimApi as jest.Mock).mockResolvedValue({});
+    (api.fetchClaimsApi as jest.Mock).mockResolvedValue({ data: [] });
+
+    const result = await createClaim({
+      title: "test",
+      description: "desc",
+    });
+
+    expect(api.createClaimApi).toHaveBeenCalledWith(
+      "http://localhost:3000",
+      "token",
+      { title: "test", description: "desc" }
+    );
+
+    expect(result).toEqual([]); // returns fetchClaims result
+  });
+
+  it("should not create claim if fields are empty", async () => {
+    const alertMock = jest
+      .spyOn(window, "alert")
+      .mockImplementation(() => {});
+
+    await createClaim({
+      title: "",
+      description: "",
+    });
+
+    expect(alertMock).toHaveBeenCalledWith("Fill all fields");
+    expect(api.createClaimApi).not.toHaveBeenCalled();
+
+    alertMock.mockRestore();
+  });
+
   it("should call updateClaimApi", async () => {
     (api.updateClaimApi as jest.Mock).mockResolvedValue({});
+    (api.fetchClaimsApi as jest.Mock).mockResolvedValue({ data: [] });
 
     await updateClaim("1", {
       title: "t",
@@ -69,6 +104,7 @@ describe("claims.controller", () => {
 
   it("should call deleteClaimApi", async () => {
     (api.deleteClaimApi as jest.Mock).mockResolvedValue({});
+    (api.fetchClaimsApi as jest.Mock).mockResolvedValue({ data: [] });
 
     await deleteClaim("1");
 
@@ -79,47 +115,9 @@ describe("claims.controller", () => {
     );
   });
 
-  it("should create claim successfully", async () => {
-    
-    document.body.innerHTML = `
-      <input id="title" value="Test Title" />
-      <input id="description" value="Test Description" />
-    `;
-  
-    
-    (api.createClaimApi as jest.Mock).mockResolvedValue({});
-    (api.fetchClaimsApi as jest.Mock).mockResolvedValue({ data: [] });
-  
-    await createClaim();
-  
-    expect(api.createClaimApi).toHaveBeenCalledWith(
-      "http://localhost:3000",
-      "token",
-      {
-        title: "Test Title",
-        description: "Test Description",
-      }
-    );
-  });
-
-  it("should not create claim if fields are empty", async () => {
-    document.body.innerHTML = `
-      <input id="title" value="" />
-      <input id="description" value="" />
-    `;
-  
-    const alertMock = jest.spyOn(window, "alert").mockImplementation(() => {});
-  
-    await createClaim();
-  
-    expect(alertMock).toHaveBeenCalledWith("Fill all fields");
-    expect(api.createClaimApi).not.toHaveBeenCalled();
-  
-    alertMock.mockRestore();
-  });
-
   it("should call updateStatusApi", async () => {
     (api.updateStatusApi as jest.Mock).mockResolvedValue({});
+    (api.fetchClaimsApi as jest.Mock).mockResolvedValue({ data: [] });
 
     await updateStatus("1", "OPEN");
 
