@@ -37,7 +37,7 @@ This project follows **separation of concerns** and modular design principles:
 ---
 ---
 
-##  Demo (Recommended)
+##  Demo
 
 
 
