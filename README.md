@@ -1,73 +1,220 @@
-# React + TypeScript + Vite
+# 🧾 Claim Widget Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A modern frontend application for interacting with the Claims API.
+It enables users to create, manage, and track claims, along with an admin panel for configuration, experimentation, and feature control.
 
-## React Compiler
+---
+##  Architecture & Design
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project follows **separation of concerns** and modular design principles:
 
-## Expanding the ESLint configuration
+### Key Design Decisions
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* 🔹 **Decoupled Demo Entry**
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+  * `demo.html` is intentionally kept separate from the main app
+  * Allows isolated testing and embedding of the widget
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* 🔹 **Service Layer Abstraction**
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+  * API calls handled via dedicated service (`claims.api.ts`)
+  * Keeps UI clean and maintainable
+
+* 🔹 **Controller Layer**
+
+  * Business logic separated from UI components
+
+* 🔹 **Unit Testing**
+
+  * Service and controller layers are covered with unit tests:
+
+    * `claims.api.spec.ts`
+    * `claims.controller.spec.ts`
+
+ This ensures better maintainability, scalability, and testability.
+---
+---
+
+##  Demo (Recommended)
+
+
+
+### Claim Widget Flow
+
+![Widget Demo](/claim-widget-home.png)
+![Loaded Widget](/claim-widget.png)
+![ClaimsTable](/claim-table.png)
+
+### Admin Panel Flow
+
+![Admin Demo](/admin.html)
+![Admin Loaded](/admin-panel-loaded.png)
+
+---
+
+##  Features
+
+###  Claims Widget
+
+* Create claims
+* View claims (all / filtered by status)
+* Update claims
+* Delete claims
+
+###  Admin Panel
+
+* Version management
+* Feature variants
+* A/B testing toggle
+* Drag-and-drop UI configuration
+
+---
+
+##  Screenshots
+
+###  Login & Authentication
+
+![Login Endpoint](/screenshot-login.png)
+
+###  Token Authorization
+
+![Authorization](/screenshot-auth.png)
+
+
+## 🏗 Architecture Overview
+
+```text
+Frontend (Claim Widget)
+        │
+        ▼
+Claims API (Backend)
+        │
+        ▼
+JWT Authentication
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Getting Started
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Prerequisites
+
+* Docker installed
+* Claims API running
+
+---
+
+### 2. Authenticate
+
+1. Open the login endpoint
+2. Enter credentials:
+
+```json
+{
+  "email": "test@test.com",
+  "password": "123456"
+}
 ```
+
+3. Click **Execute**
+4. Copy the JWT token from **Authorize**
+
+---
+
+### 3. Run Frontend
+
+```bash
+docker compose up --build
+```
+
+App runs at:
+
+```
+http://localhost:5000
+```
+
+---
+
+### 4. Open Demo
+
+```
+http://localhost:5000/demo.html
+```
+
+---
+
+##  Usage
+
+###  Load Claim Widget
+
+1. Paste JWT token
+2. Click **Open Widget**
+3. Start managing claims
+
+---
+
+###  Use Admin Panel
+
+1. Paste JWT token
+2. Click **Load Admin**
+3. Features available:
+
+   * Variant switching (A/B testing)
+   * Version control
+   * Drag & drop layout
+   * UI configuration
+
+---
+
+##  Project Structure
+
+```text
+.
+├── src/
+│   ├── widget.style.css
+    ├── admin.css
+    ├── claims.api.ts
+    ├── claims.controller.ts
+    ├── config.service.ts
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── ...
+ 
+├── demo.html
+├── admin.html
+├── docker-compose.yml
+├── dockerfile
+└── README.md
+```
+
+---
+
+## Authentication
+
+* JWT-based authentication
+* Required for:
+
+  * Claim operations
+  * Admin panel access
+
+---
+
+##  Roadmap
+
+* [ ] Add pagination to claims table
+* [ ] Persist JWT securely
+* [ ] Convert to SPA (merge admin + widget)
+* [ ] Improve UI/UX:
+
+  * Animations
+  * Guided walkthroughs
+  * Mobile optimization
+
+
+
+
+
+
+
